@@ -12,58 +12,49 @@ class AdversaryOracle(AbstractOracle):
     CAN_ESTIMATE = 0
     ADV_ESTIMATE = 1
 
-    def __init__(self, candidate_estimate, view, validator_set):
+    def __init__(self, candidate_estimate, view, validator_set, viewables):
         if candidate_estimate is None:
             raise Exception("cannot decide if safe without an estimate")
 
         self.candidate_estimate = candidate_estimate
         self.view = view
         self.validator_set = validator_set
+        self.viewables = viewables
+
 
     def get_recent_messages_and_viewables(self):
-        """Converts some current view to binary to make reasoning about viewables easier."""
+        """Converts some viewables to binary version."""
 
         recent_messages = dict()
-        viewables = dict()
+        binary_viewables = dict()
 
-        # For some validator ...
         for validator in self.validator_set:
             # ... if nothing is seen from validator, assume the worst ...
             if validator not in self.view.latest_messages:
                 recent_messages[validator] = ModelBet(AdversaryOracle.ADV_ESTIMATE, validator)
-                viewables[validator] = dict()
+                binary_viewables[validator] = dict()
 
             # ... or if their most recent messages conflicts w/ estimate,
             # again working with adversary.
             elif utils.are_conflicting_estimates(self.candidate_estimate,
                                                  self.view.latest_messages[validator]):
                 recent_messages[validator] = ModelBet(AdversaryOracle.ADV_ESTIMATE, validator)
-                viewables[validator] = dict()
+                binary_viewables[validator] = dict()
 
             else:
                 # Sanity check!
                 assert not utils.are_conflicting_estimates(self.candidate_estimate, self.view.latest_messages[validator])
 
-                # These are the validators who are voting with the candidate_estimate.
                 recent_messages[validator] = ModelBet(AdversaryOracle.CAN_ESTIMATE, validator)
                 viewables[validator] = dict()
-                # now construct the messages that they can see from other validators
-                for val2 in self.validator_set:
-                    # if they have seen nothing from some validator, assume the worst
-                    # NOTE: This may not be necessary, might be possible to do a free
-                    # block check here? see issue #44
-                    if val2 not in self.view.latest_messages[validator].justification.latest_messages:
-                        viewables[validator][val2] = ModelBet(AdversaryOracle.ADV_ESTIMATE, val2)
-                        continue
 
-                    # If they have seen something from other validators, do a free block check
-                    # If there is a free block, assume they will see that (side-effects free!)
-                    val2_msg_in_v_view = self.view.latest_messages[validator].justification.latest_messages[val2]
-                    if utils.exists_free_message(self.candidate_estimate,
-                                                 val2, val2_msg_in_v_view.sequence_number, self.view):
+                for val2 in self.validator_set:
+
+                    if val2 in self.viewables[validator]:
                         viewables[validator][val2] = ModelBet(AdversaryOracle.ADV_ESTIMATE, val2)
                     else:
                         viewables[validator][val2] = ModelBet(AdversaryOracle.CAN_ESTIMATE, val2)
+
 
         return recent_messages, viewables
 

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 class AbstractOracle(ABC):
     @abstractmethod
-    def __init__(self, candidate_estimate, view, validator_set):
+    def __init__(self, candidate_estimate, view, validator_set, viewables):
         pass
 
     @abstractmethod
