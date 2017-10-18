@@ -46,24 +46,24 @@ class AdversaryOracle(AbstractOracle):
                 assert not utils.are_conflicting_estimates(self.candidate_estimate, self.view.latest_messages[validator])
 
                 recent_messages[validator] = ModelBet(AdversaryOracle.CAN_ESTIMATE, validator)
-                viewables[validator] = dict()
+                binary_viewables[validator] = dict()
 
                 for val2 in self.validator_set:
 
                     if val2 in self.viewables[validator]:
-                        viewables[validator][val2] = ModelBet(AdversaryOracle.ADV_ESTIMATE, val2)
+                        binary_viewables[validator][val2] = ModelBet(AdversaryOracle.ADV_ESTIMATE, val2)
                     else:
-                        viewables[validator][val2] = ModelBet(AdversaryOracle.CAN_ESTIMATE, val2)
+                        binary_viewables[validator][val2] = ModelBet(AdversaryOracle.CAN_ESTIMATE, val2)
 
 
-        return recent_messages, viewables
+        return recent_messages, binary_viewables
 
     def check_estimate_safety(self):
         """Check the safety of the estimate."""
 
-        recent_messages, viewables = self.get_recent_messages_and_viewables()
+        recent_messages, binary_viewables = self.get_recent_messages_and_viewables()
 
-        adversary = Adversary(self.CAN_ESTIMATE, recent_messages, viewables, self.validator_set)
+        adversary = Adversary(self.CAN_ESTIMATE, recent_messages, binary_viewables, self.validator_set)
 
         attack_success, _, _ = adversary.ideal_network_attack()
 

@@ -17,14 +17,39 @@ class CliqueOracle(AbstractOracle):
         self.view = view
         self.validator_set = validator_set
         self.viewables = viewables
+        # Only consider validators whose messages are compatable w/ candidate_estimate.
+        self.with_candidate = {
+            v for v in self.validator_set if v in self.view.latest_messages and
+            not utils.are_conflicting_estimates(
+                self.candidate_estimate,
+                self.view.latest_messages[v]
+            )
+        }
 
     def _collect_edges(self):
 
         edges = []
         # For each pair of validators, val1, val2, add an edge if:
         for val1, val2 in itertools.combinations(self.with_candidate, 2):
-            # there are no viewables for either validator for eachother
 
+            v1_msg = self.view.latest_messages[val1]
+            if val2 not in v1_msg.justification.latest_messages:
+                continue
+
+            v2_msg_in_v1_view = v1_msg.justification.latest_messages[val2]
+            if utils.are_conflicting_estimates(self.candidate_estimate, v2_msg_in_v1_view):
+                continue
+
+            # the latest block val2 has seen from val1 is on the candidate estimate
+            v2_msg = self.view.latest_messages[val2]
+            if val1 not in v2_msg.justification.latest_messages:
+                continue
+
+            v1_msg_in_v2_view = v2_msg.justification.latest_messages[val1]
+            if utils.are_conflicting_estimates(self.candidate_estimate, v1_msg_in_v2_view):
+                continue
+
+            # and there are no messages that could change eachothers minds!
             if val2 in self.viewables[val1]:
                 continue
 
@@ -44,17 +69,8 @@ class CliqueOracle(AbstractOracle):
     def find_biggest_clique(self):
         """Finds the biggest clique of validators committed to target estimate."""
 
-        # Only consider validators whose messages are compatable w/ candidate_estimate.
-        with_candidate = {
-            v for v in self.validator_set if v in self.view.latest_messages and
-            not utils.are_conflicting_estimates(
-                self.candidate_estimate,
-                self.view.latest_messages[v]
-            )
-        }
-
         # Do not have safety if less than half have candidate_estimate.
-        if self.validator_set.weight(with_candidate) < self.validator_set.weight() / 2:
+        if self.validator_set.weight(self.with_candidate) < self.validator_set.weight() / 2:
             return set(), 0
 
         edges = self._collect_edges()
