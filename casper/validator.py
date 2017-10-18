@@ -5,7 +5,7 @@ import random as r
 
 from casper.block import Block
 from casper.view import View
-from casper.safety_oracles.clique_oracle import CliqueOracle
+from casper.safety_oracles.oracle_manager import OracleManager
 
 r.seed()
 REPORT = True
@@ -25,6 +25,7 @@ class Validator:
         self.weight = weight
         self.view = View(set())
         self.validator_set = validator_set
+        self.oracle_manager = OracleManager(self.view, self.validator_set, 0)
 
     def receive_messages(self, messages):
         """Allows the validator to receive protocol messages."""
@@ -49,10 +50,7 @@ class Validator:
         if self.validator_set is None:
             raise AttributeError("Validator must have a validator_set to check estimate safety.")
 
-        oracle = CliqueOracle(estimate, self.view, self.validator_set)
-        fault_tolerance, _ = oracle.check_estimate_safety()
-
-        if fault_tolerance > 0:
+        if self.oracle_manager.check_safety(estimate):
             if self.view.last_finalized_block:
                 assert self.view.last_finalized_block.is_in_blockchain(estimate)
 

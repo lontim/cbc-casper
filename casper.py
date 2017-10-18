@@ -11,7 +11,7 @@ import sys
 
 import casper.settings as s
 from casper.network import Network
-from casper.safety_oracles.clique_oracle import CliqueOracle
+from casper.safety_oracles.oracle_manager import OracleManager
 import casper.utils as utils
 import casper.presets as presets
 from casper.simulation_utils import (
@@ -39,6 +39,8 @@ def main():
     communications = []
     safe_blocks = set()
     node_ft = dict()
+
+    oracle_manager = OracleManager(network.global_view, validator_set, 0)
 
     iterator = 0
     while True:
@@ -83,15 +85,10 @@ def main():
         # Display the fault tolerance in the global view
         tip = network.global_view.estimate()
         while tip and node_ft.get(tip, 0) != len(validator_set) - 1:
-            # TODO: decide which oracle to use when displaying global ft.
-            # When refactoring visualizations, could give options to switch
-            # between different oracles while displaying a view!
-            oracle = CliqueOracle(tip, network.global_view, validator_set)
-            fault_tolerance, num_node_ft = oracle.check_estimate_safety()
 
-            if fault_tolerance > 0:
+            if oracle_manager.check_safety(tip):
                 safe_blocks.add(tip)
-                node_ft[tip] = num_node_ft
+                node_ft[tip] = len(validator_set) - 1
 
             tip = tip.estimate
 
