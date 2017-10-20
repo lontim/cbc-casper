@@ -11,6 +11,7 @@ import sys
 
 import casper.settings as s
 from casper.network import Network
+from casper.safety_oracles.clique_oracle import CliqueOracle
 from casper.safety_oracles.oracle_manager import OracleManager
 import casper.utils as utils
 import casper.presets as presets
@@ -86,7 +87,7 @@ def main():
         tip = network.global_view.estimate()
         while tip and node_ft.get(tip, 0) != len(validator_set) - 1:
 
-            if oracle_manager.check_safety(tip):
+            if oracle_manager.check_safety(tip, CliqueOracle):
                 safe_blocks.add(tip)
                 node_ft[tip] = len(validator_set) - 1
 

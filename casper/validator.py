@@ -5,6 +5,7 @@ import random as r
 
 from casper.block import Block
 from casper.view import View
+from casper.safety_oracles.clique_oracle import CliqueOracle
 from casper.safety_oracles.oracle_manager import OracleManager
 
 r.seed()
@@ -50,7 +51,7 @@ class Validator:
         if self.validator_set is None:
             raise AttributeError("Validator must have a validator_set to check estimate safety.")
 
-        if self.oracle_manager.check_safety(estimate):
+        if self.oracle_manager.check_safety(estimate, CliqueOracle):
             if self.view.last_finalized_block:
                 assert self.view.last_finalized_block.is_in_blockchain(estimate)
 

@@ -1,18 +1,13 @@
-from casper.safety_oracles.clique_oracle import CliqueOracle
-from casper.safety_oracles.turan_oracle import TuranOracle
-from casper.safety_oracles.adversary_oracle import AdversaryOracle
-
 import casper.utils as utils
 
 class OracleManager:
 
     def __init__(self, view, validator_set, safety_threshold):
-        self.validator_set = validator_set
         self.view = view
+        self.validator_set = validator_set
         self.safety_threshold = safety_threshold
         self.viewables_for_estimate = dict()
         self.last_checked_messages = dict()
-
 
     def update_viewables(self):
         # for each estimate we are keeping track of
@@ -122,7 +117,7 @@ class OracleManager:
         del self.viewables_for_estimate[finalized_estimate]
 
 
-    def check_safety(self, estimate):
+    def check_safety(self, estimate, oracle_class):
         if estimate not in self.viewables_for_estimate:
             # we store them as None to represent that the validator has a viewable in that they have not seen
             # anything from this other validator
@@ -131,7 +126,8 @@ class OracleManager:
 
         self.update_viewables()
 
-        oracle = CliqueOracle(estimate, self.view, self.validator_set, self.viewables_for_estimate[estimate])
+        # create a new safety oracle
+        oracle = oracle_class(estimate, self.view, self.validator_set, self.viewables_for_estimate[estimate])
         fault_tolerance, _ = oracle.check_estimate_safety()
 
         if fault_tolerance > self.safety_threshold:
