@@ -49,3 +49,17 @@ def test_no_majority_fork_safe_after_union(test_lang_runner):
     )
     weights = {0: 5, 1: 4.5, 2: 6, 3: 4, 4: 5.25}
     test_lang_runner(test_string, weights)
+
+def test_cache_checks_all_possible_viewables(test_lang_runner):
+    test_string = ''
+    for i in range(100):
+        test_string += 'B' + str(i % 5) + '-' + str(i) + ' ' + 'B' + str((i + 1) % 5) + '-' + str(i + 100)
+        test_string += ' S' + str((i + 1) % 5) + '-' + str(i) + ' ' + 'S' + str((i + 2) % 5) + '-' + str(i + 100) + ' '
+    for i in range(100):
+        for j in range(5):
+            # check that all validators are unsafe on every block
+            test_string += 'U' + str(j) + '-' + str(i) + ' ' + 'U' + str(j) + '-' + str(i + 100) + ' '
+    test_string = test_string[:-1]
+
+    weights = {0: 10, 1: 9.5, 2: 8.32, 3: 7.123, 4: 6.02245}
+    test_lang_runner(test_string, weights)
