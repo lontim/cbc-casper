@@ -10,10 +10,19 @@ class OracleManager:
         self.last_checked_messages = dict()
 
     def update_viewables(self):
+        # finds all new viewables, for each validator, for each estimate we are keeping track of
+        self._track_new_viewables()
+        # removed all old viewables that validators have seen
+        self._remove_outdated_viewables()
+        # for efficiencies sake, updates the last messages we have checked for viewables for each estimate
+        self._update_last_checked_messages()
+
+
+    def _track_new_viewables(self):
         # for each estimate we are keeping track of
         for estimate in self.viewables_for_estimate:
             # get the newest messages that are conflicting with it from each validator (there may be None)
-            newest_conflicting_messages = self.get_newest_conflicting_messages(estimate)
+            newest_conflicting_messages = self._get_newest_conflicting_messages(estimate)
             # for each of these newly conflicting messages
             for new_conflicting_message in newest_conflicting_messages:
                 # try to make it a viewable for each validator
@@ -22,11 +31,12 @@ class OracleManager:
                     if new_conflicting_message.sender == validator:
                         continue
                     # can only be a viewable if a validator has not seen it!
-                    if not self.validator_has_seen_message(validator, new_conflicting_message):
+                    if not self._validator_has_seen_message(validator, new_conflicting_message):
 
                         self.viewables_for_estimate[estimate][validator][new_conflicting_message.sender] = new_conflicting_message
 
-        # now, delete old viewables that are oudated, for each estimate
+    def _remove_outdated_viewables(self):
+        # delete old viewables that are outdated, for each estimate
         for estimate in self.viewables_for_estimate:
             # for each validator we have seen a message from (only way to see viewables!)
             for validator in self.view.latest_messages:
@@ -37,7 +47,7 @@ class OracleManager:
                     viewable = self.viewables_for_estimate[estimate][validator][v]
                     if viewable:
                         # if the validator has seen the viewable, then we can remove it
-                        if self.validator_has_seen_message(validator, viewable):
+                        if self._validator_has_seen_message(validator, viewable):
                             assert viewable in validator.view.messages # just for testing
                             to_remove.add(v)
 
@@ -45,12 +55,13 @@ class OracleManager:
                 for v in to_remove:
                     del self.viewables_for_estimate[estimate][validator][v]
 
+
+    def _update_last_checked_messages(self):
         for estimate in self.viewables_for_estimate:
             for v in self.view.latest_messages:
                 self.last_checked_messages[estimate][v] = self.view.latest_messages[v]
 
-
-    def validator_has_seen_message(self, validator, message):
+    def _validator_has_seen_message(self, validator, message):
 
         if validator not in self.view.latest_messages:
             return False
@@ -68,7 +79,7 @@ class OracleManager:
         return True
 
 
-    def get_newest_conflicting_messages(self, estimate):
+    def _get_newest_conflicting_messages(self, estimate):
         # dict from validator (not all) => newest conflicting message with estimate
         # NOTE: we can only consider the most recent message as all oracles are assumed to be side effects free
         newest_conflicting_messages = set()
