@@ -21,7 +21,6 @@ def test_oracle_manager_initalization(weights):
     assert oracle_manager.validator_set == validator_set
     assert oracle_manager.view == view
     assert not any(oracle_manager.viewables_for_estimate)
-    assert not any(oracle_manager.last_checked_messages)
 
 
 

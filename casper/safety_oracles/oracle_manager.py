@@ -9,59 +9,46 @@ class OracleManager:
         self.validator_set = validator_set
         self.safety_threshold = safety_threshold
         self.viewables_for_estimate = dict()
-        self.last_checked_messages = dict()
 
-    def update_viewables(self):
-        """For each estimate being tracked, finds new and removes old viewables based on view"""
-        # finds all new viewables, for each validator, for each estimate we are keeping track of
-        self._track_new_viewables()
+    def update_viewables(self, new_message):
+        """Whenever a new_message is recived, updates the viewables """
+        self._track_new_viewables(new_message)
         # removed all old viewables that validators have seen
-        self._remove_outdated_viewables() #TODO: only have to remove viewables that we do not update above!
-        # for efficiency, updates the last messages we have checked for viewables for each estimate
-        self._update_last_checked_messages()
+        self._remove_outdated_viewables(new_message.sender)
 
-    def _track_new_viewables(self):
+    def _track_new_viewables(self, new_message):
         # for each estimate we are keeping track of
         for estimate in self.viewables_for_estimate:
-            # get newest messages that are conflicting from each validator (there may be none)
-            newest_conflicting_messages = self._get_newest_conflicting_messages(estimate)
-            # for each of these newly conflicting messages
-            for conflicting_message in newest_conflicting_messages:
-                # try to make it a viewable for each validator
+            if utils.are_conflicting_estimates(estimate, new_message):
                 for validator in self.validator_set:
-                    msg_sender = conflicting_message.sender
-                    # can't be a viewable for a validator who created
-                    if msg_sender == validator:
+                    if validator == new_message.sender: # can't have a viewable for yourself
                         continue
-                    # can only be a viewable if a validator has not seen it!
-                    if not self._validator_has_seen_message(validator, conflicting_message):
-                        self.viewables_for_estimate[estimate][validator][msg_sender] = \
-                                                                    conflicting_message
 
-    def _remove_outdated_viewables(self):
+                    viewables = self.viewables_for_estimate[estimate][validator]
+
+                    if new_message.sender in viewables and \
+                        viewables[new_message.sender].sequence_number > new_message.sequence_number:
+                        continue
+
+                    self.viewables_for_estimate[estimate][validator][new_message.sender] = \
+                                                                                new_message
+
+
+    def _remove_outdated_viewables(self, validator):
         # delete old viewables that are outdated, for each estimate
         for estimate in self.viewables_for_estimate:
-            # for each validator we have seen a message from (only way to see viewables!)
-            for validator in self.view.latest_messages:
-                # keep track of outdated viewables (can't remove mid-iteration)
-                to_remove = set()
-                # for each of these viewables
-                for val_with_viewable in self.viewables_for_estimate[estimate][validator]:
-                    viewable = self.viewables_for_estimate[estimate][validator][val_with_viewable]
-                    if viewable:
-                        # if the validator has seen the viewable, then we can remove it
-                        if self._validator_has_seen_message(validator, viewable):
-                            to_remove.add(val_with_viewable)
+            # keep track of outdated viewables (can't remove mid-iteration)
+            to_remove = set()
+            # for each of these viewables
+            for val_with_viewable in self.viewables_for_estimate[estimate][validator]:
+                viewable = self.viewables_for_estimate[estimate][validator][val_with_viewable]
 
-                # remove all the outdated viewables
-                for val_with_viewable in to_remove:
-                    del self.viewables_for_estimate[estimate][validator][val_with_viewable]
+                if self._validator_has_seen_message(validator, viewable):
+                    to_remove.add(val_with_viewable)
 
-    def _update_last_checked_messages(self):
-        for estimate in self.viewables_for_estimate:
-            for validator in self.view.latest_messages:
-                self.last_checked_messages[estimate][validator] = \
-                                self.view.latest_messages[validator]
+            # remove all the outdated viewables
+            for val_with_viewable in to_remove:
+                del self.viewables_for_estimate[estimate][validator][val_with_viewable]
 
     def _validator_has_seen_message(self, validator, message):
 
@@ -80,38 +67,6 @@ class OracleManager:
         assert message in validator.view.messages, "...should have seen message!"
         return True
 
-    def _get_newest_conflicting_messages(self, estimate):
-        # dict from validator (not all) => newest conflicting message with estimate
-        # NOTE: consider the most newest message as all oracles are assumed to be side effects free
-        newest_conflicting_messages = set()
-
-        # for each validator we have seen messages from
-        for validator in self.view.latest_messages:
-
-            # if we previous checked some of their messages
-            if validator in self.last_checked_messages[estimate]:
-                # then the last_checked_sequence_num is the message we checked
-                last_checked_seq = self.last_checked_messages[estimate][validator].sequence_number
-            else:
-                # otherwise, we've never checked something from them before
-                # TODO: low hanging fruid for optimization here:
-                # set the last_checked_sequence_num to be the oldest message from this validator
-                # in the justification of the latest messages from all validators
-                last_checked_seq = -1
-
-            # start at their most recent message, and go to the last message we checked
-            tip = self.view.latest_messages[validator]
-            while tip and tip.sequence_number > last_checked_seq:
-                # if the message conflicts, stop looking!
-                if utils.are_conflicting_estimates(estimate, tip):
-                    newest_conflicting_messages.add(tip)
-                    break
-                if validator not in tip.justification.latest_messages:
-                    break
-                tip = tip.justification.latest_messages[validator]
-
-        return newest_conflicting_messages
-
     def _remove_outdated_estimates(self, finalized_estimate):
         # no longer need to keep track of estimates that are a) safe, or b) def not safe
         to_remove = set()
@@ -121,18 +76,16 @@ class OracleManager:
                 to_remove.add(estimate)
 
         for estimate in to_remove:
-            del self.last_checked_messages[estimate]
             del self.viewables_for_estimate[estimate]
 
         del self.viewables_for_estimate[finalized_estimate]
 
     def check_safety(self, estimate, oracle_class):
         """Returns if safety on an estimate using the oracle_class is above the safety threshold"""
-        if estimate not in self.viewables_for_estimate:
-            self.last_checked_messages[estimate] = dict()
-            self.viewables_for_estimate[estimate] = {v: dict() for v in self.validator_set}
+        # NOTE: Assumes that the viewables are up-to-date!
 
-        self.update_viewables()
+        if estimate not in self.viewables_for_estimate:
+            self.viewables_for_estimate[estimate] = {v: dict() for v in self.validator_set}
 
         # create a new safety oracle
         oracle = oracle_class(

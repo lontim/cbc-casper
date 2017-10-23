@@ -30,7 +30,12 @@ class Validator:
 
     def receive_messages(self, messages):
         """Allows the validator to receive protocol messages."""
-        self.view.add_messages(messages)
+        new_messages = self.view.get_new_messages(messages)
+        self.view.add_messages(new_messages)
+
+        for message in new_messages:
+            assert isinstance(message, Block)
+            self.oracle_manager.update_viewables(message)
 
     def estimate(self):
         """The estimator function returns the set of max weight estimates.

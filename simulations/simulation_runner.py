@@ -1,6 +1,7 @@
 import sys
 
 import casper.utils as utils
+from casper.block import Block
 from casper.network import Network
 from casper.safety_oracles.clique_oracle import CliqueOracle
 from casper.safety_oracles.oracle_manager import OracleManager
@@ -110,6 +111,9 @@ class SimulationRunner:
             if message.estimate is not None:
                 self.blockchain.append([message, message.estimate])
 
+        for message in messages.values():
+            assert isinstance(message, Block)
+            self.oracle_manager.update_viewables(message)
         return messages
 
     def _check_messages_for_safety(self, messages):
