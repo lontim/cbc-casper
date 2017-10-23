@@ -10,8 +10,13 @@ class OracleManager:
         self.safety_threshold = safety_threshold
         self.viewables_for_estimate = dict()
 
+    def make_new_viewables(self):
+        # TODO: get rid of this, by god :)
+        for message in self.view.messages:
+            self.update_viewables(message)
+
     def update_viewables(self, new_message):
-        """Whenever a new_message is recived, updates the viewables """
+        """Whenever a new_message is recived, updates the viewables"""
         self._track_new_viewables(new_message)
         # removed all old viewables that validators have seen
         self._remove_outdated_viewables(new_message.sender)
@@ -19,19 +24,30 @@ class OracleManager:
     def _track_new_viewables(self, new_message):
         # for each estimate we are keeping track of
         for estimate in self.viewables_for_estimate:
+            # if this new message conflicts with the estimate, could be a free block
             if utils.are_conflicting_estimates(estimate, new_message):
+                # make it a viewable for each validator
                 for validator in self.validator_set:
                     if validator == new_message.sender: # can't have a viewable for yourself
                         continue
 
-                    viewables = self.viewables_for_estimate[estimate][validator]
+                    # only b/c we might not add the message in "regular" order
 
-                    if new_message.sender in viewables and \
-                        viewables[new_message.sender].sequence_number > new_message.sequence_number:
+                    if self._validator_has_seen_message(validator, new_message):
                         continue
 
-                    self.viewables_for_estimate[estimate][validator][new_message.sender] = \
-                                                                                new_message
+                    viewables = self.viewables_for_estimate[estimate][validator]
+
+                    if new_message.sender not in viewables:
+                        self.viewables_for_estimate[estimate][validator][new_message.sender] = \
+                                                                                    new_message
+
+                    last_viewable = viewables[new_message.sender]
+
+                    if last_viewable.sequence_number < new_message.sequence_number:
+                        self.viewables_for_estimate[estimate][validator][new_message.sender] = \
+                                                                                    new_message
+
 
 
     def _remove_outdated_viewables(self, validator):
@@ -67,6 +83,7 @@ class OracleManager:
         assert message in validator.view.messages, "...should have seen message!"
         return True
 
+
     def _remove_outdated_estimates(self, finalized_estimate):
         # no longer need to keep track of estimates that are a) safe, or b) def not safe
         to_remove = set()
@@ -86,6 +103,8 @@ class OracleManager:
 
         if estimate not in self.viewables_for_estimate:
             self.viewables_for_estimate[estimate] = {v: dict() for v in self.validator_set}
+            self.make_new_viewables()
+
 
         # create a new safety oracle
         oracle = oracle_class(
