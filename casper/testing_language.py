@@ -70,6 +70,8 @@ class TestLangCBC:
 
             self.handlers[letter](validator, name)
 
+        return self
+
     def send_block(self, validator, block_name):
         """Send some validator a block."""
         self._validate_validator(validator)
