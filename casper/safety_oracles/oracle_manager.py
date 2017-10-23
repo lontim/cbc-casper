@@ -15,7 +15,7 @@ class OracleManager:
         # finds all new viewables, for each validator, for each estimate we are keeping track of
         self._track_new_viewables()
         # removed all old viewables that validators have seen
-        self._remove_outdated_viewables()
+        self._remove_outdated_viewables() #TODO: only have to remove viewables that we do not update above!
         # for efficiency, updates the last messages we have checked for viewables for each estimate
         self._update_last_checked_messages()
 
