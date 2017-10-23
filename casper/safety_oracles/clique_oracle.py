@@ -27,7 +27,6 @@ class CliqueOracle(AbstractOracle):
         }
 
     def _collect_edges(self):
-
         edges = []
         # For each pair of validators, val1, val2, add an edge if:
         for val1, val2 in itertools.combinations(self.with_candidate, 2):

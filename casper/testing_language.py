@@ -206,9 +206,4 @@ class TestLangCBC:
         )
 
     def _edge(self, edges, width, color, style):
-        return {
-            'edges': edges,
-            'width': width,
-            'edge_color': color,
-            'style': style
-        }
+        return utils.edge(edges, width, color, style)
