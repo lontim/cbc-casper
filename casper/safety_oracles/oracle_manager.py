@@ -1,5 +1,6 @@
 import casper.utils as utils
 
+
 class OracleManager:
     """Stores and updates viewables for an estimate for some validators based on a view"""
 
@@ -18,7 +19,6 @@ class OracleManager:
         self._remove_outdated_viewables()
         # for efficiency, updates the last messages we have checked for viewables for each estimate
         self._update_last_checked_messages()
-
 
     def _track_new_viewables(self):
         # for each estimate we are keeping track of
@@ -57,7 +57,6 @@ class OracleManager:
                 for val_with_viewable in to_remove:
                     del self.viewables_for_estimate[estimate][validator][val_with_viewable]
 
-
     def _update_last_checked_messages(self):
         for estimate in self.viewables_for_estimate:
             for validator in self.view.latest_messages:
@@ -80,7 +79,6 @@ class OracleManager:
         # just for testing, not actually allowed in the real world :)
         assert message in validator.view.messages, "...should have seen message!"
         return True
-
 
     def _get_newest_conflicting_messages(self, estimate):
         # dict from validator (not all) => newest conflicting message with estimate
@@ -114,8 +112,6 @@ class OracleManager:
 
         return newest_conflicting_messages
 
-
-
     def _remove_outdated_estimates(self, finalized_estimate):
         # no longer need to keep track of estimates that are a) safe, or b) def not safe
         to_remove = set()
@@ -129,7 +125,6 @@ class OracleManager:
             del self.viewables_for_estimate[estimate]
 
         del self.viewables_for_estimate[finalized_estimate]
-
 
     def check_safety(self, estimate, oracle_class):
         """Returns if safety on an estimate using the oracle_class is above the safety threshold"""
