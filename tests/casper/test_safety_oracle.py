@@ -57,14 +57,14 @@ def test_no_majority_fork_safe_after_union(test_lang_runner):
 
 def test_no_final_leads_to_no_finalized_messages(test_lang_runner):
     test_str = ''
-    for i in range(100):
+    for i in range(30):
         # each round, two simultaneous round-robin message propagations occur at the same time.
         # this is nofinal preset - so should never have finalized blocks
         test_str += 'B' + str(i % 5) + '-' + str(i) + ' '
         test_str += 'B' + str((i+1) % 5) + '-' + str(i+100) + ' '
         test_str += 'S' + str((i+1) % 5) + '-' + str(i) + ' '
         test_str += 'S' + str((i+2) % 5) + '-' + str(i+100) + ' '
-    for i in range(100):
+    for i in range(30):
         for j in range(5):
             # check that all validators are unsafe on every block
             test_str += 'U' + str(j) + '-' + str(i) + ' ' + 'U' + str(j) + '-' + str(i + 100) + ' '
