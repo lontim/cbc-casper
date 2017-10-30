@@ -40,12 +40,14 @@ def test_random_message_maker(validator_set):
     msg_gen = message_maker("rand")
 
     for i in range(20):
-        message_paths = msg_gen(validator_set)
+        message_paths, new_messages = msg_gen(validator_set)
         assert len(message_paths) == 1
         for message_path in message_paths:
             assert len(message_path) == 2
             for validator in message_path:
                 assert validator in validator_set
+
+            assert new_messages[0] == message_path[1]
 
 
 def test_round_robin_message_maker(validator_set):
@@ -57,12 +59,13 @@ def test_round_robin_message_maker(validator_set):
 
     for i in range(3):
         for j in range(len(validator_set)):
-            message_paths = msg_gen(validator_set)
+            message_paths, new_messages = msg_gen(validator_set)
             assert len(message_paths) == 1
             message_path = message_paths[0]
             assert len(message_path) == 2
             assert message_path[0] == senders[j]
             assert message_path[1] == receivers[j]
+            assert message_path[1] == new_messages[0]
 
 
 @pytest.mark.parametrize(
@@ -85,11 +88,12 @@ def test_full_message_maker(weights, pairs):
     validator_set = ValidatorSet(weights)
     msg_gen = message_maker("full")
 
-    message_paths = msg_gen(validator_set)
+    message_paths, new_messages = msg_gen(validator_set)
     for sender_name, receiver_name in pairs:
         sender = validator_set.get_validator_by_name(sender_name)
         receiver = validator_set.get_validator_by_name(receiver_name)
         assert (sender, receiver) in message_paths
+        assert sender in new_messages
 
 
 def test_no_final_message_maker(validator_set):
@@ -101,7 +105,7 @@ def test_no_final_message_maker(validator_set):
     for i in range(3):
         for j in range(len(validator_set)):
             index = j * 2 % len(validator_set)
-            message_paths = msg_gen(validator_set)
+            message_paths, new_messages = msg_gen(validator_set)
             assert len(message_paths) == 2
 
             # first rr message this round
@@ -109,9 +113,11 @@ def test_no_final_message_maker(validator_set):
             assert len(first_message_path) == 2
             assert first_message_path[0] == senders[index]
             assert first_message_path[1] == receivers[index]
+            assert first_message_path[1] == new_messages[0]
 
             # second rr message this round
             second_message_path = message_paths[1]
             assert len(second_message_path) == 2
             assert second_message_path[0] == senders[(index + 1) % len(validator_set)]
             assert second_message_path[1] == receivers[(index + 1) % len(validator_set)]
+            assert second_message_path[1] == new_messages[1]

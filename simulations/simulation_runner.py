@@ -48,13 +48,11 @@ class SimulationRunner:
     def step(self):
         """ run one round of the simulation """
         self.round += 1
-        message_paths = self.msg_gen(self.validator_set)
-
-        affected_validators = {j for i, j in message_paths}
+        message_paths, new_message_makers = self.msg_gen(self.validator_set)
 
         sent_messages = self._send_messages_along_paths(message_paths)
-        new_messages = self._make_new_messages(affected_validators)
-        self._check_for_new_safety(affected_validators)
+        new_messages = self._make_new_messages(new_message_makers)
+        self._check_for_new_safety(new_message_makers)
 
         self.plot_tool.update(message_paths, sent_messages, new_messages)
         if self.round % self.report_interval == self.report_interval - 1:

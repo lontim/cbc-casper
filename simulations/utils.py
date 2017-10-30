@@ -23,7 +23,9 @@ def message_maker(mode):
             """Each round, some randomly selected validators propagate their most recent
             message to other randomly selected validators, who then create new messages."""
             pairs = list(itertools.permutations(validator_set, 2))
-            return r.sample(pairs, num_messages)
+            message_paths = r.sample(pairs, num_messages)
+            new_messages = [path[1] for path in message_paths]
+            return (message_paths, new_messages)
 
         return random
 
@@ -37,10 +39,9 @@ def message_maker(mode):
             round_robin.next_sender_index = (sender_index + 1) % len(validator_set)
             receiver_index = round_robin.next_sender_index
 
-            return [[
-                sorted_validators[sender_index],
-                sorted_validators[receiver_index]
-            ]]
+            return ([[sorted_validators[sender_index], sorted_validators[receiver_index]]],
+                    [sorted_validators[receiver_index]]
+                   )
 
         round_robin.next_sender_index = 0
         return round_robin
@@ -51,7 +52,7 @@ def message_maker(mode):
             """Each round, all validators receive all other validators previous
             messages, and then all create messages."""
             pairs = list(itertools.permutations(validator_set, 2))
-            return pairs
+            return (pairs, validator_set)
 
         return full_propagation
 
@@ -62,7 +63,9 @@ def message_maker(mode):
             """Each round, two simultaneous round-robin message propagations occur at the same
             time. This results in validators never being able to finalize later blocks (they
             may finalize initial blocks, depending on validator weight distribution)."""
-            return [rrob(validator_set)[0], rrob(validator_set)[0]]
+            message_paths = [rrob(validator_set)[0][0], rrob(validator_set)[0][0]]
+            new_creators = [message_paths[0][1],  message_paths[1][1]]
+            return message_paths, new_creators
 
         return no_final
 
