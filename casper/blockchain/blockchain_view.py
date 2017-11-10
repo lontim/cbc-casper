@@ -83,6 +83,7 @@ class BlockchainView(AbstractView):
 
     def update_safe_estimates(self, validator_set):
         """Checks safety on messages in views forkchoice, and updates last_finalized_block"""
+        return
         tip = self.estimate()
 
         prev_last_finalized_block = self.last_finalized_block

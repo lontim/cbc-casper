@@ -47,27 +47,34 @@ class SimulationRunner:
     def step(self):
         """ run one round of the simulation """
         self.round += 1
-        message_paths = self.msg_gen(self.validator_set)
+        senders = self.msg_gen(self.validator_set)
 
-        affected_validators = {j for i, j in message_paths}
+        self._send_messages_from_senders(senders)
+        actions_taken = self._move_simulation_forward()
 
-        sent_messages = self._send_messages_along_paths(message_paths)
+        affected_validators = {receiver for _, receiver in actions_taken}
+
         new_messages = self._make_new_messages(affected_validators)
         self._check_for_new_safety(affected_validators)
 
-        self.plot_tool.update(message_paths, sent_messages, new_messages)
+        self.plot_tool.update(actions_taken, new_messages)
         if self.round % self.report_interval == self.report_interval - 1:
             self.plot_tool.plot()
 
-    def _send_messages_along_paths(self, message_paths):
+    def _move_simulation_forward(self):
+        return self.network.step_forward(1)
+
+
+    def _send_messages_from_senders(self, senders):
         sent_messages = {}
         # Send most recent message of sender to receive
-        for sender, receiver in message_paths:
+        for sender in senders:
             message = sender.my_latest_message()
-            self.network.propagate_message_to_validator(message, receiver)
-            sent_messages[sender] = message
+            for receiver in self.validator_set:
+                if sender == receiver:
+                    continue
+                self.network.send(message, receiver)
 
-        return sent_messages
 
     def _make_new_messages(self, validators):
         messages = {}

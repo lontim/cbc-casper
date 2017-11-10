@@ -19,16 +19,14 @@ class BlockchainPlotTool(PlotTool):
         self.block_fault_tolerance = {}
         self.message_labels = {}
 
-    def update(self, message_paths=None, sent_messages=None, new_messages=None):
+    def update(self, actions_taken=None, new_messages=None):
         """Updates displayable items with new messages and paths"""
-        if message_paths is None:
-            message_paths = []
-        if sent_messages is None:
-            sent_messages = dict()
+        if actions_taken is None:
+            actions_taken = []
         if new_messages is None:
             new_messages = dict()
 
-        self._update_communications(message_paths, sent_messages, new_messages)
+        self._update_communications(actions_taken, new_messages)
         self._update_blockchain(new_messages)
         self._update_block_fault_tolerance()
         self._update_message_labels(new_messages)
@@ -68,9 +66,9 @@ class BlockchainPlotTool(PlotTool):
 
         return vals_chain_edges
 
-    def _update_communications(self, message_paths, sent_messages, new_messages):
-        for sender, receiver in message_paths:
-            self.communications.append([sent_messages[sender], new_messages[receiver]])
+    def _update_communications(self, actions_taken, new_messages):
+        for message, receiver in actions_taken:
+            self.communications.append([message, new_messages[receiver]])
 
     def _update_blockchain(self, new_messages):
         for message in new_messages.values():
