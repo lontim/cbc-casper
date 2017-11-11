@@ -4,15 +4,13 @@ from casper.abstract_view import AbstractView
 from casper.binary.bet import Bet
 import casper.binary.binary_estimator as estimator
 
-import random as r
-
-
 class BinaryView(AbstractView):
     """A view class that also keeps track of a last_finalized_block and children"""
     def __init__(self, messages=None):
         super().__init__(messages)
 
         self.last_finalized_estimate = None
+        self.first = True
 
     def estimate(self):
         """Returns the current forkchoice in this view"""
@@ -20,23 +18,10 @@ class BinaryView(AbstractView):
             self.latest_messages
         )
 
-    def add_messages(self, showed_messages):
-        """Updates views latest_messages and children based on new messages"""
 
-        if not showed_messages:
-            return
-
-        for message in showed_messages:
-            assert isinstance(message, Bet), "expected only to add a Bet!"
-
-        # find any not-seen messages
-        newly_discovered_messages = self.get_new_messages(showed_messages)
-
-        # add these new messages to the messages in view
-        self.messages.update(newly_discovered_messages)
-
-        # update views most recently seen messages
-        for message in newly_discovered_messages:
+    def add_to_justified_messages(self, messages):
+        """Given a set of newly justified messages, updates latest messages"""
+        for message in messages:
             if message.sender not in self.latest_messages:
                 self.latest_messages[message.sender] = message
             elif self.latest_messages[message.sender].sequence_number < message.sequence_number:
@@ -44,12 +29,13 @@ class BinaryView(AbstractView):
 
             self.justified_messages[message.header] = message
 
+
     def make_new_message(self, validator):
         """Make a new bet!"""
         justification = self.justification()
         estimate = self.estimate()
-        sequence_number = self.next_sequence_number(validator)
-        display_height = self.next_display_height()
+        sequence_number = self._next_sequence_number(validator)
+        display_height = self._next_display_height()
 
         new_message = Bet(estimate, justification, validator, sequence_number, display_height)
         self.add_messages(set([new_message]))
