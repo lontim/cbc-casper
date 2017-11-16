@@ -40,10 +40,10 @@ def message_maker(mode):
             round_robin.next_sender_index = (sender_index + 1) % len(validator_set)
             receiver_index = round_robin.next_sender_index
 
-            return [[
+            return [
                 sorted_validators[sender_index],
                 sorted_validators[receiver_index]
-            ]]
+            ]
 
         round_robin.next_sender_index = 0
         return round_robin
