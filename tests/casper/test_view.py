@@ -165,3 +165,42 @@ def test_multiple_messages_arriving_resolve():
     validator_1.receive_messages(test_lang.network.global_view.justified_messages.values())
 
     assert len(validator_1.view.justified_messages) == 8
+
+
+
+@pytest.mark.parametrize(
+    'test_string, in_view, not_in_view',
+    [
+        (
+            'B0-A B0-B P1-B',
+            [['A', 'B'], ['B']],
+            [[], ['A']],
+        ),
+        (
+            'B0-A B0-B S1-B B1-C',
+            [['A', 'B'], ['A', 'B', 'C']],
+            [['C'], []],
+        ),
+        (
+            'B0-A RR0-B B1-C B1-D B1-E P0-E',
+            [['A', 'B', 'E'], ['A', 'B', 'C', 'D', 'E']],
+            [['C', 'D'], []],
+        ),
+    ]
+)
+def test_message_with_hash(test_string, in_view, not_in_view):
+    test_lang = TestLangCBC(TEST_WEIGHT)
+    test_lang.parse(test_string)
+
+    for validator in test_lang.validator_set:
+        idx = validator.name
+
+        for message_name in in_view[idx]:
+            message = test_lang.blocks[message_name]
+            returned_message = validator.view.message_with_hash(message.hash)
+            assert message == returned_message
+
+        for message_name in not_in_view[idx]:
+            message = test_lang.blocks[message_name]
+            with pytest.raises(KeyError):
+                validator.view.message_with_hash(message.hash)

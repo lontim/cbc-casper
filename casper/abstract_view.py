@@ -103,3 +103,12 @@ class AbstractView(object):
             message_hash for message_hash in message.justification.values()
             if message_hash not in self.justified_messages
         }
+
+    def message_with_hash(self, message_hash):
+        """Returns a message with a hash, if in view
+        Throws a KeyError if not"""
+        if message_hash in self.justified_messages:
+            return self.justified_messages[message_hash]
+        if message_hash in self.pending_messages:
+            return self.pending_messages[message_hash]
+        raise KeyError('Message with hash {} is not in view'.format(message_hash))
