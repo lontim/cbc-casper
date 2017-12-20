@@ -32,11 +32,11 @@ def random_gaussian_validator_set_from_protocol(protocol=BlockchainProtocol):
     return generate_random_gaussian_validator_set(protocol)
 
 
-def example_func():
-    return
-
 @pytest.fixture
 def example_function():
+    def example_func():
+        return
+
     return example_func
 
 @pytest.fixture(autouse=True)
@@ -66,13 +66,16 @@ def test_lang_runner(report):
     else:
         return run_test_lang_without_reports
 
+
 @pytest.fixture
 def binary_lang(report, test_weight):
     return BinaryTestLang(test_weight, report)
 
+
 @pytest.fixture
 def blockchain_lang(report, test_weight):
     return BlockchainTestLang(test_weight, report)
+
 
 @pytest.fixture
 def integer_lang(report, test_weight):

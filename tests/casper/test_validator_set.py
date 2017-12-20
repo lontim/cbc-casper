@@ -111,8 +111,8 @@ def test_weight(weights, expected_weight, validator_names):
         ({i: i for i in range(10)}),
         ({i: 9 - i for i in range(9, -1, -1)}),
         ({i: r.random() for i in range(10)}),
-        ({i: i*2 for i in range(10)}),
-        ({i: i*2 for i in range(10)}),
+        ({i: i * 2 for i in range(10)}),
+        ({i: i * 2 for i in range(10)}),
     ]
 )
 def test_get_validator_by_name(weights):
@@ -129,8 +129,8 @@ def test_get_validator_by_name(weights):
         ({i: i for i in range(10)}),
         ({i: 9 - i for i in range(9, -1, -1)}),
         ({i: r.random() for i in range(10)}),
-        ({i: i*2 for i in range(10)}),
-        ({i: i*2 for i in range(10)}),
+        ({i: i * 2 for i in range(10)}),
+        ({i: i * 2 for i in range(10)}),
     ]
 )
 def test_get_validators_by_names(weights):
