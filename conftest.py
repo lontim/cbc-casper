@@ -4,6 +4,7 @@ import pytest
 from casper.protocols.blockchain.blockchain_protocol import BlockchainProtocol
 from casper.protocols.integer.integer_protocol import IntegerProtocol
 from casper.protocols.binary.binary_protocol import BinaryProtocol
+from casper.protocols.order.order_protocol import OrderProtocol
 
 from casper.networks import (
     ConstantDelayNetwork,
@@ -13,7 +14,7 @@ from casper.networks import (
 from simulations.utils import generate_random_gaussian_validator_set
 
 
-PROTOCOLS = [BlockchainProtocol, BinaryProtocol, IntegerProtocol]
+PROTOCOLS = [BlockchainProtocol, BinaryProtocol, IntegerProtocol, OrderProtocol]
 
 
 def pytest_addoption(parser):

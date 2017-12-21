@@ -1,11 +1,16 @@
 """The network testing module ... """
 from casper.network import Network
 
+from casper.protocols.blockchain.blockchain_protocol import BlockchainProtocol
 
-def test_new_network(validator_set):
-    network = Network(validator_set)
+
+def test_new_network(validator_set, protocol):
+    network = Network(validator_set, protocol)
     assert network.validator_set == validator_set
-    assert len(network.global_view.justified_messages) == 1 or len(network.global_view.justified_messages) == len(validator_set)
+    if protocol == BlockchainProtocol:
+        assert len(network.global_view.justified_messages) == 1
+    else:
+        assert len(network.global_view.justified_messages) == len(validator_set)
 
 
 def test_default_time(network):
