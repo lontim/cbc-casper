@@ -79,16 +79,16 @@ def test_simulation_runner_step(simulation_runner):
 
 
 @pytest.mark.parametrize(
-    'protocol, mode, messages_generated_per_round, potential_extra_messages',
+    'mode, messages_generated_per_round, potential_extra_messages',
     [
-        (BlockchainProtocol, 'rand', 1, 4),
-        (BlockchainProtocol, 'rrob', 1, 4),
-        (BlockchainProtocol, 'full', 5, 4),
-        (BlockchainProtocol, 'nofinal', 2, 2),
-        (BinaryProtocol, 'rand', 1, 0),
-        (BinaryProtocol, 'rrob', 1, 0),
-        (BinaryProtocol, 'full', 5, 0),
-        (BinaryProtocol, 'nofinal', 2, 0),
+        ('rand', 1, 4),
+        ('rrob', 1, 4),
+        ('full', 5, 4),
+        ('nofinal', 2, 2),
+        ('rand', 1, 0),
+        ('rrob', 1, 0),
+        ('full', 5, 0),
+        ('nofinal', 2, 0),
     ]
 )
 def test_simulation_runner_send_messages(
@@ -115,7 +115,7 @@ def test_simulation_runner_send_messages(
 
     if protocol == BlockchainProtocol:
         assert len(simulation_runner.network.global_view.justified_messages) == 1
-    if protocol == BinaryProtocol:
+    else:
         assert len(simulation_runner.network.global_view.justified_messages) == len(validator_set)
 
     initial_message_length = len(simulation_runner.network.global_view.justified_messages)

@@ -16,12 +16,12 @@ import simulations.utils as utils
         ('nofinal', 2),
     ]
 )
-def test_num_messages(validator_set, network, mode, messages_generated_per_round):
+def test_num_messages(protocol, validator_set, network, mode, messages_generated_per_round):
     msg_gen = utils.message_maker(mode)
     simulation_runner = SimulationRunner(
         validator_set,
         msg_gen,
-        BlockchainProtocol,
+        protocol,
         network,
         100,
         20,
@@ -29,8 +29,12 @@ def test_num_messages(validator_set, network, mode, messages_generated_per_round
         False
     )
     analyzer = Analyzer(simulation_runner)
+    print(protocol)
 
-    assert analyzer.num_messages == 1
+    if protocol == BlockchainProtocol:
+        assert analyzer.num_messages == 1
+    else:
+        assert analyzer.num_messages == len(validator_set)
     potential_extra_messages = len(validator_set) - 1
 
     for i in range(10):

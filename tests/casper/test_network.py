@@ -5,7 +5,7 @@ from casper.network import Network
 def test_new_network(validator_set):
     network = Network(validator_set)
     assert network.validator_set == validator_set
-    assert len(network.global_view.justified_messages) == 1
+    assert len(network.global_view.justified_messages) == 1 or len(network.global_view.justified_messages) == len(validator_set)
 
 
 def test_default_time(network):

@@ -2,15 +2,18 @@ import random as r
 import pytest
 
 from casper.protocols.blockchain.blockchain_protocol import BlockchainProtocol
+from casper.protocols.integer.integer_protocol import IntegerProtocol
+from casper.protocols.binary.binary_protocol import BinaryProtocol
 
 from casper.networks import (
     ConstantDelayNetwork,
     NoDelayNetwork
 )
 
-from state_languages.blockchain_test_lang import BlockchainTestLang
-
 from simulations.utils import generate_random_gaussian_validator_set
+
+
+PROTOCOLS = [BlockchainProtocol, BinaryProtocol, IntegerProtocol]
 
 
 def pytest_addoption(parser):
@@ -42,9 +45,14 @@ def generate_validator_set():
     return random_gaussian_validator_set_from_protocol
 
 
+@pytest.fixture(params=PROTOCOLS)
+def protocol(request):
+    return request.param
+
+
 @pytest.fixture
-def validator_set():
-    return random_gaussian_validator_set_from_protocol(BlockchainProtocol)
+def validator_set(protocol):
+    return random_gaussian_validator_set_from_protocol(protocol)
 
 
 @pytest.fixture
@@ -71,18 +79,18 @@ def from_validator(to_from_validators):
 
 
 @pytest.fixture
-def network(validator_set):
-    return NoDelayNetwork(validator_set)
+def network(protocol, validator_set):
+    return NoDelayNetwork(validator_set, protocol)
 
 
 @pytest.fixture
-def no_delay_network(validator_set):
-    return NoDelayNetwork(validator_set)
+def no_delay_network(protocol, validator_set):
+    return NoDelayNetwork(validator_set, protocol)
 
 
 @pytest.fixture
-def constant_delay_network(validator_set):
-    return ConstantDelayNetwork(validator_set)
+def constant_delay_network(protocol, validator_set):
+    return ConstantDelayNetwork(validator_set, protocol)
 
 
 @pytest.fixture
