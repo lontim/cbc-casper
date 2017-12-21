@@ -15,8 +15,8 @@ def test_new_view():
     assert not any(view.latest_messages)
 
 
-def test_justification_stores_hash():
-    test_lang = BlockchainTestLang(TEST_WEIGHT)
+def test_justification_stores_hash(test_lang_creator):
+    test_lang = test_lang_creator(TEST_WEIGHT)
     test_lang.parse('M0-A SJ1-A M1-B')
 
     validator_0 = test_lang.validator_set.get_validator_by_name(0)
@@ -31,8 +31,8 @@ def test_justification_stores_hash():
     assert justification[validator_1] == test_lang.messages['B'].hash
 
 
-def test_justification_includes_justified_messages():
-    test_lang = BlockchainTestLang(TEST_WEIGHT)
+def test_justification_includes_justified_messages(test_lang_creator):
+    test_lang = test_lang_creator(TEST_WEIGHT)
     test_lang.parse('M0-A M0-B S1-B M1-C')
 
     validator_0 = test_lang.validator_set.get_validator_by_name(0)
@@ -40,10 +40,8 @@ def test_justification_includes_justified_messages():
 
     justification = validator_1.justification()
 
-    assert len(justification) == 2
     assert test_lang.messages["A"].hash not in justification.values()
     assert test_lang.messages["B"].hash not in justification.values()
-    assert test_lang.network.global_view.genesis_block.hash in justification.values()
     assert justification[validator_1] == test_lang.messages['C'].hash
 
     test_lang.parse('SJ1-B')
@@ -55,8 +53,7 @@ def test_justification_includes_justified_messages():
     assert justification[validator_1] == test_lang.messages['C'].hash
 
 
-def test_add_justified_message():
-    test_lang = BlockchainTestLang(TEST_WEIGHT)
+def test_add_justified_message(test_lang):
     test_lang.parse('M0-A M0-B SJ1-A')
     validator_0 = test_lang.validator_set.get_validator_by_name(0)
     validator_1 = test_lang.validator_set.get_validator_by_name(1)
@@ -74,8 +71,8 @@ def test_add_justified_message():
         ('M0-A M0-B M0-C S1-C S1-B', [['A', 'B', 'C'], []], [[], ['B', 'C']]),
     ]
 )
-def test_only_add_justified_messages(test_string, justified_messages, unjustified_messages):
-    test_lang = BlockchainTestLang(TEST_WEIGHT)
+def test_only_add_justified_messages(test_lang_creator, test_string, justified_messages, unjustified_messages):
+    test_lang = test_lang_creator(TEST_WEIGHT)
     test_lang.parse(test_string)
 
     for validator in test_lang.validator_set:
@@ -153,9 +150,9 @@ def test_resolve_message_when_justification_arrives(weight, test_string, justifi
 
 
 
-def test_multiple_messages_arriving_resolve():
+def test_multiple_messages_arriving_resolve_with_genesis(genesis_test_lang_creator):
+    test_lang = genesis_test_lang_creator(TEST_WEIGHT)
     test_string = "M0-A SJ1-A M0-B M0-C M0-D M0-E M0-F S1-F"
-    test_lang = BlockchainTestLang(TEST_WEIGHT)
     test_lang.parse(test_string)
 
     validator_1 = test_lang.validator_set.get_validator_by_name(1)
@@ -167,3 +164,18 @@ def test_multiple_messages_arriving_resolve():
     validator_1.receive_messages(test_lang.network.global_view.justified_messages.values())
 
     assert len(validator_1.view.justified_messages) == 7
+
+def test_multiple_messages_arriving_resolve_with_initial(initial_test_lang_creator):
+    test_lang = initial_test_lang_creator(TEST_WEIGHT)
+    test_string = "M0-A SJ1-A M0-B M0-C M0-D M0-E M0-F S1-F"
+    test_lang.parse(test_string)
+
+    validator_1 = test_lang.validator_set.get_validator_by_name(1)
+
+    assert len(validator_1.view.justified_messages) == 3
+    assert len(validator_1.view.pending_messages) == 1
+    assert test_lang.messages['F'] in validator_1.view.pending_messages.values()
+
+    validator_1.receive_messages(test_lang.network.global_view.justified_messages.values())
+
+    assert len(validator_1.view.justified_messages) == 8
